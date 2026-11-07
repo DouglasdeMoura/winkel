@@ -1,10 +1,11 @@
 use std::path::PathBuf;
 
-// Where the QML lives: WINKEL_UI first, so a checkout always wins for its own
-// runs; then beside the binary; then a capped walk up the tree, which finds
-// both the cargo checkout (`target/release/winkel` → `ui/` at the repo root)
-// and a prefixed install (`/usr/local/bin/winkel` → `/usr/local/share/winkel/ui`);
-// then the system path pacman owns.
+// Where the catalogues live: WINKEL_UI first, so a checkout always wins for
+// its own runs; then beside the binary; then a capped walk up the tree, which
+// finds both the cargo checkout (`target/release/winkel` → `ui/` at the repo
+// root) and a prefixed install (`/usr/local/bin/winkel` →
+// `/usr/local/share/winkel/ui`); then the system path pacman owns. The marker
+// is en.json — the QML shell is gone.
 pub fn ui_dir() -> Option<PathBuf> {
     if let Some(v) = std::env::var_os("WINKEL_UI") {
         if !v.is_empty() {
@@ -13,16 +14,16 @@ pub fn ui_dir() -> Option<PathBuf> {
     }
     let exe = std::env::current_exe().ok()?;
     let mut dir = exe.parent().map(PathBuf::from)?;
-    if dir.join("ui").join("shell.qml").is_file() {
+    if dir.join("ui").join("i18n").join("en.json").is_file() {
         return Some(dir.join("ui"));
     }
     for _ in 0..4 {
         let repo = dir.join("ui");
-        if repo.join("shell.qml").is_file() {
+        if repo.join("i18n").join("en.json").is_file() {
             return Some(repo);
         }
         let installed = dir.join("share/winkel/ui");
-        if installed.join("shell.qml").is_file() {
+        if installed.join("i18n").join("en.json").is_file() {
             return Some(installed);
         }
         if !dir.pop() {
@@ -30,7 +31,7 @@ pub fn ui_dir() -> Option<PathBuf> {
         }
     }
     let system = PathBuf::from("/usr/share/winkel/ui");
-    if system.join("shell.qml").is_file() {
+    if system.join("i18n").join("en.json").is_file() {
         return Some(system);
     }
     None

@@ -22,16 +22,17 @@ appstreamcli validate --no-net packaging/dev.douglasmoura.winkel.metainfo.xml
 desktop-file-validate packaging/dev.douglasmoura.winkel.desktop
 ```
 
-If the view changed, retake the README's screenshots:
+If the view changed, retake the README's screenshots on a Wayland session
+with grim, ImageMagick and Hyprland:
 
 ```sh
+cargo build --release
 tools/screenshots.sh                     # over docs/screenshots
 tools/screenshots.sh /tmp/shots          # or somewhere else, to compare first
 ```
 
-It shoots the three views in each of the README's two themes, offscreen,
-under a HOME of its own per theme, so it needs no session and lands the same
-pixels twice. It reads each theme's `colors.toml` from
+It shoots the three views in each of the README's two themes under a HOME of
+its own per theme. It reads each theme's `colors.toml` from
 `~/.local/share/omarchy/themes` and the `shell.toml` omarchy generated for
 the theme in use, so the two themes it shows must be installed.
 
