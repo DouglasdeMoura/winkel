@@ -25,14 +25,14 @@ build:
 
 test:
 	cargo test --locked
-	bash tests/ui.sh
+	cargo test -p winkel-ui --features test-support --locked
 
 install:
 	@test -x "$(BIN)" || { echo "no binary at $(BIN): run 'make' first"; exit 1; }
 	install -Dm755 "$(BIN)" "$(BINDIR)/$(NAME)"
 	rm -rf "$(SHAREDIR)/$(NAME)/ui"
-	install -d "$(SHAREDIR)/$(NAME)"
-	cp -r ui "$(SHAREDIR)/$(NAME)/ui"
+	install -d "$(SHAREDIR)/$(NAME)/ui"
+	cp -r ui/i18n "$(SHAREDIR)/$(NAME)/ui/i18n"
 	install -Dm644 packaging/$(APP_ID).desktop "$(SHAREDIR)/applications/$(APP_ID).desktop"
 	install -Dm644 packaging/$(APP_ID).svg "$(SHAREDIR)/icons/hicolor/scalable/apps/$(APP_ID).svg"
 	install -Dm644 packaging/$(APP_ID).metainfo.xml "$(SHAREDIR)/metainfo/$(APP_ID).metainfo.xml"
@@ -47,17 +47,18 @@ uninstall:
 	rm -f "$(SHAREDIR)/metainfo/$(APP_ID).metainfo.xml"
 	rm -rf "$(SHAREDIR)/licenses/$(NAME)"
 
-# A release tarball for this machine's architecture: the binary, the QML,
-# the packaging and this Makefile, so `make install` works without cargo.
+# A release tarball for this machine's architecture: the binary, the
+# catalogues, the packaging and this Makefile, so `make install` works
+# without cargo.
 VERSION  := $(shell sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml 2>/dev/null | head -1)
 ARCH     ?= $(shell uname -m)
 DISTNAME := $(NAME)-$(VERSION)-$(ARCH)-linux
 
 dist: build
 	rm -rf "dist/$(DISTNAME)"
-	install -d "dist/$(DISTNAME)/packaging"
+	install -d "dist/$(DISTNAME)/packaging" "dist/$(DISTNAME)/ui"
 	install -m755 target/release/$(NAME) "dist/$(DISTNAME)/$(NAME)"
-	cp -r ui "dist/$(DISTNAME)/ui"
+	cp -r ui/i18n "dist/$(DISTNAME)/ui/i18n"
 	cp packaging/$(APP_ID).desktop packaging/$(APP_ID).svg packaging/$(APP_ID).metainfo.xml packaging/ICON-LICENSE "dist/$(DISTNAME)/packaging/"
 	cp LICENSE README.md Makefile "dist/$(DISTNAME)/"
 	tar -C dist -czf "dist/$(DISTNAME).tar.gz" "$(DISTNAME)"

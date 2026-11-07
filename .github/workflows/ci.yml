@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:
-      - name: Install toolchain, Quickshell and test tools
+      - name: Install toolchain and libraries
         run: |
-          pacman -Syu --noconfirm --needed base-devel git rust quickshell qt6-svg alsa-lib ripgrep ttf-jetbrains-mono-nerd
+          pacman -Syu --noconfirm --needed base-devel git rust alsa-lib libxkbcommon libxkbcommon-x11 libxcb vulkan-icd-loader vulkan-headers wayland wayland-protocols fontconfig freetype2 clang ripgrep ttf-jetbrains-mono-nerd
       - uses: actions/checkout@v4
       - name: Rust tests
-        run: cargo test --locked
-      - name: QML frontend tests
-        run: bash tests/ui.sh
+        run: |
+          cargo test --locked
+          cargo test -p winkel-ui --features test-support --locked

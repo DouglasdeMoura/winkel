@@ -1,9 +1,9 @@
 # The Winkel protocol
 
 One json object per line, both ways, over the stdio of `winkel --backend`. The
-UI (`ui/Backend.qml`) is the only client; `src/backend/proto.rs` is the only
-interpreter. A line the backend cannot read becomes an `error` event, never a
-silence.
+UI (`ui-gpui/src/protocol.rs`) is the only client; `src/backend/proto.rs` is
+the only interpreter. A line the backend cannot read becomes an `error`
+event, never a silence.
 
 ## Requests — UI → backend
 

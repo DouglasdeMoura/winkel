@@ -1,25 +1,5 @@
 use crate::paths;
-use std::os::unix::process::CommandExt;
-use std::path::Path;
-use std::process::Command;
-
-// exec rather than spawn, so the shell replaces this process and no pid is
-// orphaned between the two halves of one app.
-pub fn exec_qs(ui: &Path) -> i32 {
-    let mut cmd = Command::new("qs");
-    cmd.arg("-p").arg(ui.join("shell.qml"));
-    // The backend binary the shell calls back into is this one, unless the
-    // caller pinned it — WINKEL_BIN is the dev seam, the same idea as FLEA_BIN.
-    if std::env::var_os("WINKEL_BIN").is_none_or(|v| v.is_empty()) {
-        if let Ok(binary) = std::env::current_exe() {
-            cmd.env("WINKEL_BIN", binary);
-        }
-    }
-    // exec() only returns on failure; the reason is elided, never shown raw.
-    let _ = cmd.exec();
-    eprintln!("winkel: could not start the shell, qs is not on PATH or failed to run");
-    1
-}
+use std::path::PathBuf;
 
 pub fn launch() -> i32 {
     // One Winkel at a time: a second metronome half a beat out from the first
@@ -33,13 +13,33 @@ pub fn launch() -> i32 {
         eprintln!("winkel: there is no graphical session to open a window in");
         return 2;
     }
-    match paths::ui_dir() {
-        Some(ui) => exec_qs(&ui),
-        None => {
-            eprintln!(
-                "winkel: the shell config is missing, set WINKEL_UI or install /usr/share/winkel/ui"
-            );
-            2
-        }
+    if paths::ui_dir().is_none() {
+        eprintln!(
+            "winkel: the catalogues are missing, set WINKEL_UI or install /usr/share/winkel/ui"
+        );
+        return 2;
     }
+
+    // The backend binary the window spawns is this one, unless the caller
+    // pinned it — WINKEL_BIN is the same seam the QML shell used.
+    let backend_bin = match std::env::var_os("WINKEL_BIN") {
+        Some(v) if !v.is_empty() => PathBuf::from(v),
+        _ => match std::env::current_exe() {
+            Ok(p) => p,
+            Err(_) => {
+                eprintln!("winkel: could not find this binary to start the backend");
+                return 1;
+            }
+        },
+    };
+    // So a child that re-reads the env (and the UI's own lookups) sees the
+    // pinned path, not a bare "winkel" that might miss the checkout build.
+    if std::env::var_os("WINKEL_BIN").is_none_or(|v| v.is_empty()) {
+        // Safety: set_var is process-wide; we are single-threaded here before
+        // the gpui runtime starts.
+        unsafe { std::env::set_var("WINKEL_BIN", &backend_bin) };
+    }
+
+    winkel_ui::run(backend_bin.to_string_lossy().into_owned());
+    0
 }

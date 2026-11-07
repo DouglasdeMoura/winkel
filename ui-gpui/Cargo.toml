@@ -1,0 +1,16 @@
+[package]
+name = "winkel-ui"
+version = "0.2.0"
+edition = "2024"
+description = "GPUI frontend for Winkel"
+license = "MIT"
+
+[features]
+test-support = ["gpui/test-support"]
+
+[dependencies]
+gpui = "0.2.2"
+swash = "0.2"
+smol = "2"
+unicode-segmentation = "1"
+lyon_path = "1"

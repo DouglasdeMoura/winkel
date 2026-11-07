@@ -4,6 +4,27 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-11-06
+
+### Changed
+
+- The interface is GPUI instead of Quickshell/QML. One `winkel` binary opens
+  the window and still spawns itself as `--backend` on the same wire; the
+  audio path stays std-only aside from cpal. Packaging no longer depends on
+  Quickshell. Startup is faster; memory and idle CPU stay about the same.
+- Theme switches are watched by polling `theme.name` (about half a second)
+  rather than an inotify on that file.
+
+### Removed
+
+- The Quickshell/QML frontend and its offscreen UI test harness.
+
+### Known gaps versus 0.1.x
+
+- No AccessKit / screen-reader roles on Linux yet (keyboard use is unchanged).
+- Pseudo-RTL and RTL layout mirroring are not implemented; cosmic-text still
+  shapes bidi runs correctly inside a left-to-right layout.
+
 ## [0.1.6] - 2026-09-19
 
 ### Changed

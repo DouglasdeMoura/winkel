@@ -1,11 +1,11 @@
 # Winkel
 
-![Rust backend](https://img.shields.io/badge/Rust-backend-informational) ![Quickshell frontend](https://img.shields.io/badge/Quickshell%2FQML-frontend-purple)
+![Rust backend](https://img.shields.io/badge/Rust-backend-informational) ![GPUI frontend](https://img.shields.io/badge/GPUI-frontend-purple)
 
 A metronome for [Omarchy](https://omarchy.org). The audio runs in a small Rust
-backend and the interface in Quickshell, and the look follows your Omarchy
-theme live: switch themes with `omarchy theme set` and Winkel repaints without
-a restart, the way [Flea](https://github.com/thisisgm/flea) does.
+backend and the interface in [GPUI](https://gpui.rs/), and the look follows your
+Omarchy theme live: switch themes with `omarchy theme set` and Winkel repaints
+without a restart, the way [Flea](https://github.com/thisisgm/flea) does.
 
 <p align="center">
   <img src="docs/screenshots/tokyo-night-main.png" width="30%" alt="Winkel's main view in the Tokyo Night theme">
@@ -53,9 +53,8 @@ it.
   beat is within reach.
 - **Omarchy theming.** Colours, type sizes and spacing follow the live theme
   and update the moment it changes. Corner rounding follows Hyprland.
-- **Ready for translation.** Every word comes from a catalogue, plurals follow
-  each language's rules, and right-to-left languages mirror the window. See
-  [docs/i18n.md](docs/i18n.md).
+- **Ready for translation.** Every word comes from a catalogue and plurals
+  follow each language's rules. See [docs/i18n.md](docs/i18n.md).
 - **Remembers your settings.** Tempo, time signature, accents and subdivision
   are saved in `~/.config/winkel/state.json`. The first launch opens at 80 BPM
   in 4/4. Settings saved under the app's earlier names, in
@@ -83,8 +82,9 @@ Winkel runs on Linux in a graphical session.
 
 | Component | Needed | Notes |
 | --- | --- | --- |
-| **Quickshell** | yes | Runs the interface (`qs`). On Arch, the `quickshell` package. |
+| **Vulkan** | yes | GPUI draws through Blade/Vulkan. On Arch, `vulkan-icd-loader` plus a driver. |
 | **ALSA library** | yes | Connects the audio backend to PipeWire, PulseAudio or ALSA. On Arch, `alsa-lib`. |
+| **libxkbcommon / libxcb** | yes | Keyboard and windowing on Wayland and X11. |
 | **Wayland or X11** | yes | Any desktop works; Omarchy's Hyprland is home. |
 | **JetBrainsMono Nerd Font** | recommended | The default font. Set `WINKEL_FONT` to use another. |
 | **Omarchy** | optional | Provides the live theme. Without it, Winkel uses its built-in colours. |
@@ -92,7 +92,8 @@ Winkel runs on Linux in a graphical session.
 
 To build from source you also need Rust 1.89 or newer, the ALSA development
 headers (part of `alsa-lib` on Arch, `libasound2-dev` on Debian and Ubuntu),
-`pkg-config` and `make`.
+Vulkan headers, Wayland/XKB development packages, `clang`, `pkg-config` and
+`make`.
 
 ## Installing
 
@@ -109,8 +110,9 @@ development version.
 ### Prebuilt binary
 
 Every [release](https://github.com/DouglasdeMoura/winkel/releases) includes
-binaries for x86_64 and aarch64. They need Quickshell and the ALSA library,
-but no Rust toolchain. Download the archive for your machine, then:
+binaries for x86_64 and aarch64. They need the ALSA library, Vulkan and the
+XKB/xcb libraries, but no Rust toolchain. Download the archive for your
+machine, then:
 
 ```sh
 tar xzf winkel-*-x86_64-linux.tar.gz
@@ -145,9 +147,9 @@ o.window("^dev\\.douglasmoura\\.winkel$", { float = true, center = true, size = 
 
 ## Development
 
-From a checkout, `./target/release/winkel` finds its own `ui/` folder. Always
-launch the binary rather than `qs` directly: the binary tells the window where
-to find its backend.
+From a checkout, `./target/release/winkel` finds its own `ui/` folder
+(catalogues under `ui/i18n`). Always launch that binary: it pins `WINKEL_BIN`
+so the window starts the same build as its backend.
 
 These environment variables help during development; see `src/paths.rs` and
 `src/gui.rs`.
@@ -165,7 +167,7 @@ Run the tests with:
 ```sh
 make test           # both suites below
 cargo test          # timeline, protocol, JSON, settings and translation catalogues
-bash tests/ui.sh    # the Quickshell interface, offscreen
+cargo test -p winkel-ui --features test-support   # GPUI window tests
 ```
 
 ### Architecture
@@ -173,26 +175,26 @@ bash tests/ui.sh    # the Quickshell interface, offscreen
 Two processes make one app, in Flea's shape:
 
 ```
-winkel                             the launcher
- └─ qs -p ui/shell.qml             the window; WINKEL_BIN tells it which backend to start
-     └─ winkel --backend           JSON lines over stdio, see docs/protocol.md
-         └─ cpal output stream     the timeline and the clicks
+winkel                             the window (GPUI)
+ └─ winkel --backend               JSON lines over stdio, see docs/protocol.md
+     └─ cpal output stream         the timeline and the clicks
 ```
 
 - `src/backend/engine.rs` is the metronome: one timeline counted in audio
   frames, the click synthesis, and the realtime rules. The audio callback only
   touches atomics, and new settings land on the next click, where a musician
   expects them. With no audio device, a silent clock keeps the visuals moving.
-- `ui/Main.qml` is the one screen and its dialogs.
-- `ui/Rhythm.js` and `ui/NoteFigure.qml` hold the subdivision cells and draw
-  their notation.
-- `ui/Theme.qml` reads the theme's `colors.toml` and `shell.toml` from
-  `~/.local/state/omarchy/current/theme/` before the first paint, and watches
+- `ui-gpui/` is the one screen and its dialogs, drawn with GPUI.
+- `ui-gpui/src/rhythm.rs` and `note_figure.rs` hold the subdivision cells and
+  draw their notation.
+- `ui-gpui/src/theme.rs` reads the theme's `colors.toml` and `shell.toml` from
+  `~/.local/state/omarchy/current/theme/` before the first paint, and polls
   `theme.name`, the one file `omarchy-theme-set` rewrites in place, so the
   watch survives theme switches.
-- `ui/I18n.qml` picks the language and loads its catalogue from `ui/i18n/`.
-- `src/json.rs` is all of the wire-format code. Apart from cpal, the backend
-  uses only Rust's standard library.
+- `ui-gpui/src/i18n.rs` picks the language and loads its catalogue from
+  `ui/i18n/`.
+- `src/json.rs` is the backend's wire-format code. Apart from cpal, the
+  backend uses only Rust's standard library.
 
 Releases follow [docs/releasing.md](docs/releasing.md), and changes are
 recorded in [CHANGELOG.md](CHANGELOG.md).

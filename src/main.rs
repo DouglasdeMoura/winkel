@@ -29,7 +29,7 @@ fn main() {
         usage("help:");
     }
 
-    // winkel --backend is the process the shell spawns; the protocol lives in
+    // winkel --backend is the process the window spawns; the protocol lives in
     // docs/protocol.md and its one interpreter lives in backend/proto.rs.
     if args.len() == 2 && args[1] == "--backend" {
         exit(backend::run::run());

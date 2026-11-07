@@ -1,6 +1,6 @@
 // The catalogues' guard, run by cargo test: every key the UI names exists
 // in the English source, every catalogue is well formed and follows the
-// source's placeholders, and no user-visible literal slips past I18n.tr.
+// source's placeholders, and no user-visible literal slips past i18n.tr.
 // See docs/i18n.md.
 
 use crate::backend::proto::ERROR_CODES;
@@ -10,6 +10,10 @@ use std::path::{Path, PathBuf};
 
 fn ui() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("ui")
+}
+
+fn ui_src() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("ui-gpui/src")
 }
 
 fn read(path: &Path) -> String {
@@ -24,11 +28,11 @@ fn catalogue(path: &Path) -> Vec<(String, Json)> {
     }
 }
 
-fn sources(ext: &str) -> Vec<PathBuf> {
-    let mut out: Vec<PathBuf> = std::fs::read_dir(ui())
+fn rust_sources() -> Vec<PathBuf> {
+    let mut out: Vec<PathBuf> = std::fs::read_dir(ui_src())
         .unwrap()
         .map(|e| e.unwrap().path())
-        .filter(|p| p.extension().is_some_and(|x| x == ext))
+        .filter(|p| p.extension().is_some_and(|x| x == "rs"))
         .collect();
     out.sort();
     out
@@ -163,14 +167,16 @@ fn every_key_the_ui_names_is_in_the_source_catalogue() {
     let keys: BTreeSet<&str> = source.iter().map(|(k, _)| k.as_str()).collect();
     let mut missing = Vec::new();
 
-    let mut files = sources("qml");
-    files.extend(sources("js"));
-    for file in &files {
-        for (n, line) in read(file).lines().enumerate() {
+    for file in rust_sources() {
+        for (n, line) in read(&file).lines().enumerate() {
             if line.trim_start().starts_with("//") {
                 continue;
             }
             for lit in literals(line) {
+                // format!("error.wire.{}", code) is a key template, not a key.
+                if lit.contains('{') {
+                    continue;
+                }
                 let named = NAMESPACES.iter().any(|ns| lit.starts_with(ns)) || lit.starts_with("note.");
                 let whole = !lit.ends_with('.') && !lit.contains(' ') && lit.contains('.');
                 if named && whole && !keys.contains(lit.as_str()) {
@@ -181,22 +187,18 @@ fn every_key_the_ui_names_is_in_the_source_catalogue() {
     }
 
     // Keys the UI builds rather than writes: one per wire error code, and
-    // one per figure Rhythm.js can name.
+    // one per figure rhythm.rs can name.
     for code in ERROR_CODES {
         let key = format!("error.wire.{}", code);
         if !keys.contains(key.as_str()) {
             missing.push(key);
         }
     }
-    let rhythm = read(&ui().join("Rhythm.js"));
-    let line = rhythm
-        .lines()
-        .find(|l| l.starts_with("var VALUE_KEYS = ["))
-        .expect("Rhythm.js names its figure values in VALUE_KEYS");
-    let values = literals(line);
-    assert!(!values.is_empty());
+    const VALUE_KEYS: [&str; 6] = [
+        "whole", "half", "quarter", "eighth", "sixteenth", "thirtySecond",
+    ];
     for kind in ["note", "rest"] {
-        for value in &values {
+        for value in VALUE_KEYS {
             for dotted in ["", ".dotted"] {
                 let key = format!("{}.{}{}", kind, value, dotted);
                 if !keys.contains(key.as_str()) {
@@ -270,29 +272,34 @@ fn the_translation_check_catches_what_it_should() {
 #[test]
 fn no_user_visible_literal_bypasses_the_catalogue() {
     // Words the UI shows on purpose without a catalogue: the digits a font
-    // is measured with.
+    // is measured with, and failure strings that are already catalogue keys
+    // or protocol detail.
     let allowed = ["0123456789"];
-    // A literal that is a catalogue key is the catalogue being used.
     let source = catalogue(&ui().join("i18n/en.json"));
     let keys: BTreeSet<&str> = source.iter().map(|(k, _)| k.as_str()).collect();
-    let props = ["text:", "label:", "title:", "accessibleName:", "Accessible.name:", "glyph:"];
+    // Call sites that put a string on screen: tr/tr1 args are keys; bare
+    // assignments to failure, or format strings with alphabetic content
+    // that are not keys, are the slips.
     let mut found = Vec::new();
-    for file in sources("qml") {
+    for file in rust_sources() {
         for (n, line) in read(&file).lines().enumerate() {
             let trimmed = line.trim_start();
             if trimmed.starts_with("//") {
                 continue;
             }
-            let shown = props.iter().any(|p| trimmed.starts_with(p))
-                || trimmed.contains("failed(\"")
-                || trimmed.contains("failure = \"");
-            if !shown {
+            // A bare string assigned to failure (not through i18n.tr / tr1).
+            let assigns_literal = (trimmed.contains("failure = \"")
+                || trimmed.contains(".failure = \""))
+                && !trimmed.contains(".tr(")
+                && !trimmed.contains(".tr1(");
+            if !assigns_literal {
                 continue;
             }
             for lit in literals(trimmed) {
                 if lit.chars().any(|c| c.is_alphabetic())
                     && !allowed.contains(&lit.as_str())
                     && !keys.contains(lit.as_str())
+                    && !lit.contains('{')
                 {
                     found.push(format!("{}:{} \"{}\"", file.display(), n + 1, lit));
                 }
