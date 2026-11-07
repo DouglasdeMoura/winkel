@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# The experiment's numbers: resident memory of the whole app tree, idle CPU,
-# and playing CPU (the silent clock at a lively tempo), for both frontends
-# under the same conditions. Three samples each, medians reported.
+# Resident memory of the whole app tree, idle CPU, and playing CPU (the
+# silent clock), for the shipped GPUI frontend. Three samples, medians.
 #
 #   tools/gpui-perf.py
 
@@ -9,11 +8,9 @@ import subprocess
 import time
 import statistics
 import os
-import signal
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-QML = os.path.join(ROOT, "target/release/winkel")
-GPUI = os.path.join(ROOT, "target/release/winkel-gpui")
+BIN = os.path.join(ROOT, "target/release/winkel")
 SAMPLES = 3
 
 
@@ -22,8 +19,7 @@ def sh(*args):
 
 
 def kill_all():
-    for pat in ["[w]inkel-gpui", "[q]s -p", "[w]inkel --backend"]:
-        subprocess.run(["pkill", "-f", pat], capture_output=True)
+    subprocess.run(["pkill", "-f", "[w]inkel --backend"], capture_output=True)
     subprocess.run(["pkill", "-x", "winkel"], capture_output=True)
     time.sleep(1.0)
 
@@ -87,10 +83,10 @@ def tree_cpu_over(pid, seconds=1.0):
     return total / 100.0 / wall * 100.0  # ticks@100Hz / wall → % of one core
 
 
-def run_one(binary, tag):
+def run_one():
     kill_all()
     env = dict(os.environ, WINKEL_SILENT="1")
-    proc = subprocess.Popen([binary], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    subprocess.Popen([BIN], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     pid = None
     for _ in range(60):
         time.sleep(0.25)
@@ -98,16 +94,12 @@ def run_one(binary, tag):
         if pid:
             break
     if not pid:
-        print(f"{tag}: never mapped", file=__import__('sys').stderr)
+        print("gpui: never mapped", file=__import__("sys").stderr)
         kill_all()
         return None
     time.sleep(2.0)  # fonts, first state
     rss_idle = tree_rss(pid)
     cpu_idle = tree_cpu_over(pid, 1.5)
-    # Play: focus the window and press space; the silent clock walks the
-    # beats as fast as any tempo, the way the audio clock would.
-    sh("hyprctl", "eval", "return hl.dsp.focus({ direction = 'left' })")
-    sh("hyprctl", "eval", "return hl.dsp.focus({ direction = 'right' })")
     time.sleep(0.3)
     sh("wtype", "-k", "space")
     time.sleep(1.0)
@@ -116,19 +108,19 @@ def run_one(binary, tag):
     return (rss_idle, cpu_idle, cpu_play)
 
 
-def median(xs):
-    return statistics.median(xs)
-
+if not os.path.isfile(BIN) or not os.access(BIN, os.X_OK):
+    raise SystemExit(f"build first: cargo build --release ({BIN} missing)")
 
 print("frontend rss_kib cpu_idle_pct cpu_playing_pct")
-for binary, tag in [(QML, "qml"), (GPUI, "gpui")]:
-    rows = []
-    for _ in range(SAMPLES):
-        r = run_one(binary, tag)
-        if r:
-            rows.append(r)
-    if not rows:
-        continue
-    print(f"{tag} {median(r[0] for r in rows):.0f} "
-          f"{median(r[1] for r in rows):.1f} {median(r[2] for r in rows):.1f}")
+rows = []
+for _ in range(SAMPLES):
+    r = run_one()
+    if r:
+        rows.append(r)
+if rows:
+    print(
+        f"gpui {statistics.median(r[0] for r in rows):.0f} "
+        f"{statistics.median(r[1] for r in rows):.1f} "
+        f"{statistics.median(r[2] for r in rows):.1f}"
+    )
 kill_all()

@@ -7,7 +7,8 @@
 #   tools/screenshots.sh /tmp/shots   # somewhere else, to compare first
 #
 # Each theme is shot under a HOME of its own, because the theme module reads
-# the live theme out of $HOME/.local/state/omarchy/current.
+# the live theme out of $HOME/.local/state/omarchy/current. The session's
+# XDG_RUNTIME_DIR is left alone so hyprctl/grim keep talking to the compositor.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -37,6 +38,8 @@ kill_app() {
     sleep 0.5
 }
 
+# Ring order: beats → − → + → play → time signature → tap → subdivision.
+# Focus starts on beats, so N tabs reach the Nth next control.
 shot_view() {
     local theme="$1" view="$2" home="$3"
     kill_app
@@ -51,8 +54,7 @@ shot_view() {
     case "$view" in
         main) ;;
         time-signature)
-            # Focus and open the time-signature dialog (click the signature).
-            wtype -k tab -k tab -k tab -k tab -k tab -k return 2>/dev/null || true
+            wtype -k tab -k tab -k tab -k tab -k return 2>/dev/null || true
             sleep 0.8
             ;;
         subdivision)
@@ -70,11 +72,10 @@ shot_view() {
 
 for theme in "${themes[@]}"; do
     home="$work/$theme"
-    mkdir -p "$home/.local/state/omarchy/current/theme" "$home/runtime"
+    mkdir -p "$home/.local/state/omarchy/current/theme"
     cp "$installed/$theme/colors.toml" "$home/.local/state/omarchy/current/theme/"
     cp "$shell_toml" "$home/.local/state/omarchy/current/theme/"
     printf '%s' "$theme" > "$home/.local/state/omarchy/current/theme.name"
-    export XDG_RUNTIME_DIR="$home/runtime"
     for view in main time-signature subdivision; do
         shot_view "$theme" "$view" "$home"
     done
