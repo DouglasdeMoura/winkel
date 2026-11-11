@@ -18,13 +18,21 @@ jobs:
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
       - name: Install build dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libasound2-dev pkg-config libxkbcommon-dev libxkbcommon-x11-dev \
-            libxcb1-dev libxcb-xkb-dev libwayland-dev wayland-protocols libvulkan-dev \
-            libfontconfig1-dev libfreetype6-dev clang
+          # The hosted runners' resolver has failed to resolve the Ubuntu
+          # mirror; switch to public resolvers and retry the install.
+          sudo sh -c 'printf "nameserver 1.1.1.1\nnameserver 8.8.8.8\n" > /etc/resolv.conf'
+          for attempt in 1 2 3; do
+            sudo apt-get update -o Acquire::Retries=3 &&
+              sudo apt-get install -y libasound2-dev pkg-config libxkbcommon-dev libxkbcommon-x11-dev \
+                libxcb1-dev libxcb-xkb-dev libwayland-dev wayland-protocols libvulkan-dev \
+                libfontconfig1-dev libfreetype6-dev clang &&
+              exit 0
+            sleep 15
+          done
+          exit 1
+      - uses: actions/checkout@v4
       - name: Build the release tarball
         run: make dist ARCH=${{ matrix.arch }}
       - uses: actions/upload-artifact@v4
