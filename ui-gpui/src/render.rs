@@ -11,16 +11,16 @@ use std::time::Instant;
 use gpui::prelude::*;
 use gpui::{
     canvas, div, point, px, quad, AnyElement, App, Bounds, Context, Corners, ElementId, Edges,
-    ClickEvent, Hsla, MouseButton, Pixels, Rgba, SharedString, Size, Window,
+    ClickEvent, Hsla, MouseButton, Pixels, Rgba, SharedString, Window,
 };
 
 use crate::app::{AppView, Pressed, WINDOW_H, WINDOW_W};
 use crate::layout::{main_layout, Rect, MainLayout};
 use crate::note_figure::{self, FigureGeom};
 use crate::rhythm;
-use crate::text::{paint_wrapped, qt_line, QtLine, TextCache};
+use crate::text::{paint_wrapped, qt_line, QtLine};
 use crate::theme::{ColorRole, Rgba as TRgba, Theme};
-use crate::wheel::{Wheel, BAND_TOP, CELL, WHEEL_HEIGHT, WHEEL_WIDTH};
+use crate::wheel::{BAND_TOP, CELL, WHEEL_HEIGHT, WHEEL_WIDTH};
 
 // --- the frame: everything one paint pass draws ---
 
@@ -226,7 +226,7 @@ pub fn render_app(view: &mut AppView, window: &mut Window, cx: &mut Context<AppV
                 crate::text::paint_at(window, cx, &t.line, t.x, t.baseline);
             }
             for t in &paint_frame.wrapped {
-                paint_wrapped(window, cx, &t.line, t.x, t.baseline, &QtLine { ascent: 0.0, descent: 0.0, height: t.line_h });
+                paint_wrapped(window, cx, &t.line, t.x, t.baseline, &QtLine { ascent: 0.0, height: t.line_h });
             }
         },
     );
@@ -417,10 +417,6 @@ fn paint_main_view(
     }
 }
 
-fn layout_ref(l: &MainLayout) -> &MainLayout {
-    l
-}
-
 fn caption_ascent(view: &AppView, theme: &Theme) -> f64 {
     qt_line(&view.font, theme.caption_size()).ascent
 }
@@ -492,7 +488,7 @@ fn paint_dialog_button(
 
 // A figure through the frame: paths built now, painted with the frame.
 fn paint_figure(view: &mut AppView, frame: &mut Frame, fig: &FigureGeom, x: f64, y: f64, ink: Hsla, window: &mut Window) {
-    let (paths, texts) = note_figure::build(fig, point(px(x as f32), px(y as f32)), ink, &view.theme, window, &view.theme.font_family, &mut view.texts);
+    let (paths, texts) = note_figure::build(fig, point(px(x as f32), px(y as f32)), ink, window, &view.theme.font_family, &mut view.texts);
     for p in paths {
         frame.path(p, ink);
     }
@@ -564,7 +560,7 @@ fn hit_main_view(view: &AppView, l: &MainLayout, out: &mut Vec<AnyElement>, cx: 
                     drive_press_animation(view, cx);
                 }),
             )
-            .on_click(cx.listener(|view: &mut AppView, _e: &gpui::ClickEvent, _w, cx| {
+            .on_click(cx.listener(|view: &mut AppView, _e: &gpui::ClickEvent, _w, _cx| {
                 view.send(&crate::protocol::Request::Toggle);
             }))
             .into_any_element(),
@@ -745,7 +741,6 @@ fn hit_wheel(view: &AppView, out: &mut Vec<AnyElement>, cx: &mut Context<AppView
                 };
                 let ClickEvent::Mouse(m) = e else { return };
                 let j = ((m.up.position.y.to_f64() - top + offset) / CELL).floor();
-                let now = Instant::now();
                 match which {
                     Which::Num => {
                         if j >= 0.0 && (j as usize) < view.num_wheel.values.len() {
@@ -944,10 +939,8 @@ fn paint_sub_dialog(view: &mut AppView, theme: &Theme, frame: &mut Frame, window
     let eyebrow = view.i18n.tr1("subdivision.notes").to_uppercase();
     let tracking = theme.caption_size() * 0.14;
     let eyebrow_w = {
-        let mut w = 0.0;
-        for ch in eyebrow.chars() {
-            w += view.font.mono_advance(theme.caption_size()) + tracking;
-        }
+        let advance = view.font.mono_advance(theme.caption_size()) + tracking;
+        let w = advance * eyebrow.chars().count() as f64;
         theme.golden(4).max(w + theme.golden(-1))
     };
     let eyebrow_baseline = notes_y + notes_h / 2.0 - small_qt.height / 2.0 + small_qt.ascent;

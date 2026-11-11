@@ -51,10 +51,6 @@ impl Json {
         Json::Num(n as f64)
     }
 
-    pub fn obj(pairs: Vec<(&str, Json)>) -> Json {
-        Json::Obj(pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect())
-    }
-
     // One line, no trailing newline. Integral floats render bare ("120", not
     // "120.0"), so a line round-trips through jq and the eye alike.
     pub fn render(&self) -> String {

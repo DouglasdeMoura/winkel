@@ -181,7 +181,6 @@ fn same(a: &FigureItem, b: &FigureItem) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
 
     // The names the tests check below come from the en.json catalogue, the
     // same words the QML shows.

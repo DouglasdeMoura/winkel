@@ -101,7 +101,7 @@ impl Wheel {
     // the caller knows to keep frames coming.
     pub fn tick(&mut self, now: Instant) -> bool {
         let Some(anim) = self.anim else { return false };
-        let t = (now - anim.start).as_secs_f64() / 0.15;
+        let t = (now - anim.start).as_secs_f64() / SNAP_DURATION.as_secs_f64();
         if t >= 1.0 {
             self.offset = anim.to;
             self.anim = None;

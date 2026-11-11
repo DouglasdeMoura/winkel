@@ -32,20 +32,13 @@ pub struct MainLayout {
     pub content_x: f64,
     pub content_w: f64,
     pub content_center: f64,
-    pub top_pad: f64,
     pub meters: MeterLayout,
-    pub gap_beats: f64,
-    pub gap_reach: f64,
-    pub gap_transport: f64,
     pub caption: Rect,
-    pub stepper_row: Rect,
     pub minus: Rect,
     pub hero_box: Rect,
     pub hero_font_size: f64,
-    pub hero_text_y: f64,
     pub plus: Rect,
     pub play: Rect,
-    pub button_row: Rect,
     pub ts_btn: Rect,
     pub tap_btn: Rect,
     pub sub_btn: Rect,
@@ -172,20 +165,13 @@ pub fn main_layout(
         content_x,
         content_w,
         content_center,
-        top_pad,
         meters,
-        gap_beats,
-        gap_reach,
-        gap_transport,
-        caption: Rect { x: 0.0, y: tempo_y, w: content_w, h: caption_h },
-        stepper_row: Rect { x: stepper_row_x, y: stepper_row_y, w: stepper_row_w, h: stepper_row_h },
+        caption,
         minus,
         hero_box,
         hero_font_size,
-        hero_text_y: 0.0, // set by the caller: -round(ascent - ink_top)
         plus,
         play,
-        button_row: Rect { x: button_row_x, y: button_row_y, w: button_row_w, h: button_row_h },
         ts_btn,
         tap_btn,
         sub_btn,
@@ -224,17 +210,17 @@ mod tests {
         theme.spacing_scale = 1.0;
         theme.base_size = 12.0;
         let layout = main_layout(&theme, WINDOW_W, WINDOW_H, 4, 14.0, 71.0, 55.0, 46.0, 60.0);
-        assert_eq!(layout.top_pad, 56.0); // golden(4)=55 + (610-608)/2
+        assert_eq!(layout.meters.row.y, 56.0); // golden(4)=55 + (610-608)/2
         assert_eq!(layout.meters.rect_width, 21.0);
         assert_eq!(layout.meters.bar_height, 13.0); // round(21/phi)
         assert_eq!(layout.meters.head_height, 3.0);
         assert_eq!(layout.meters.row.h, 57.0);
         assert_eq!(layout.meters.spacing, 13.0);
-        assert!(layout.gap_beats >= 21.0); // >= golden(2)
-        assert!(layout.gap_reach >= 34.0);
-        assert!(layout.gap_transport >= 13.0);
+        assert_eq!(layout.caption.y, 187.0); // the beats gap lands on 74
+        assert_eq!(layout.play.y, 384.0); // the reach gap lands on 120
         assert_eq!(layout.play.w, 89.0);
+        assert_eq!(layout.ts_btn.y, 519.0); // the transport gap lands on 46
         assert_eq!(layout.ts_btn.w, 55.0);
-        assert_eq!(layout.error_y, layout.button_row.y + layout.button_row.h + 13.0);
+        assert_eq!(layout.error_y, layout.ts_btn.y + layout.ts_btn.h + 13.0);
     }
 }

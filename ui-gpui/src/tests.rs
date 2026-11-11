@@ -5,19 +5,9 @@
 // the hero editor, and the shortcuts the help sheet promises.
 
 use gpui::prelude::*;
-use gpui::{Keystroke, TestAppContext, Window, WindowHandle};
+use gpui::{TestAppContext, WindowHandle};
 
 use crate::app::AppView;
-
-fn press(window: &mut Window, cx: &mut gpui::Context<crate::app::AppView>, key: &str) {
-    window.dispatch_keystroke(
-        Keystroke {
-            key: key.into(),
-            ..Default::default()
-        },
-        cx,
-    );
-}
 
 fn spawn(cx: &mut TestAppContext) -> WindowHandle<AppView> {
     let handle = cx.update(|cx| {

@@ -5,7 +5,7 @@
 
 use std::time::Instant;
 
-use gpui::{App, Context, FocusHandle, KeyDownEvent, MouseButton, Render, Window};
+use gpui::{Context, FocusHandle, KeyDownEvent, Render, Window};
 
 use crate::font::FontMetrics;
 use crate::hero::Hero;
@@ -15,8 +15,7 @@ use crate::text::TextCache;
 use crate::theme::Theme;
 use crate::wheel::Wheel;
 
-pub const WINDOW_W: f64 = 377.0;
-pub const WINDOW_H: f64 = 610.0;
+pub use crate::layout::{WINDOW_H, WINDOW_W};
 
 // The controls the keyboard ring can name, in the order the QML builds
 // them. The ring is rebuilt on every open/close path, so Tab always cycles
@@ -594,8 +593,6 @@ pub fn now_ms() -> f64 {
 // The main view's keyboard, the first-class input. One handler mirrors the
 // QML's Keys.onPressed, dialogs included.
 pub fn handle_key(view: &mut AppView, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<AppView>) {
-    use gpui::Modifiers;
-
     let keystroke = &event.keystroke;
     let key = keystroke.key.as_str();
     let mods = keystroke.modifiers;

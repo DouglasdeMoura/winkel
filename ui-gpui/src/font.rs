@@ -22,8 +22,6 @@ pub struct FontMetrics {
     // top is negative (above the baseline), height positive.
     digit_ink_top: f64,
     digit_ink_height: f64,
-    // Swash needs a context per thread; the metrics here are computed once.
-    context: std::sync::Mutex<ScaleContext>,
 }
 
 static FONT_CACHE: OnceLock<HashMap<String, PathBuf>> = OnceLock::new();
@@ -104,7 +102,6 @@ impl FontMetrics {
             mono_advance_units,
             digit_ink_top,
             digit_ink_height,
-            context: std::sync::Mutex::new(ctx),
         }
     }
 

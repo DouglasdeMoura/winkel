@@ -201,7 +201,7 @@ fn to_msg(v: &Json) -> Msg {
 fn pick_form(forms: &[(String, String)], args: &[(&str, Arg)], i18n: &I18n) -> String {
     let mut form: Option<&str> = None;
     let mut count: Option<f64> = None;
-    for (name, arg) in args {
+    for (_, arg) in args {
         match arg {
             Arg::Form(f) => form = Some(f.as_str()),
             Arg::Count(c) => count = Some(*c),

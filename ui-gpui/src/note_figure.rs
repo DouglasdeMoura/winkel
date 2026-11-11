@@ -6,10 +6,10 @@
 // box — the same trick the QML plays when its canvas measures its own
 // pixels after every paint.
 
-use gpui::{point, px, PathBuilder, PathStyle, StrokeOptions};
+use gpui::{px, PathBuilder, PathStyle};
 
 use crate::font::FontMetrics;
-use crate::rhythm::{self, Cell};
+use crate::rhythm;
 use crate::theme::Theme;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -41,12 +41,8 @@ pub enum Prim {
 
 #[derive(Clone, Debug)]
 pub struct FigureGeom {
-    pub cell: Cell,
-    pub beat_value: u32,
-    pub unit: f64,
     pub w: f64,
     pub h: f64,
-    pub tuplet: u32,
     pub prims: Vec<Prim>,
     // The ink box, in the box's own coordinates, pixel bounds the way the
     // QML's getImageData scan reports them.
@@ -227,7 +223,7 @@ pub fn geom(beat_value: u32, division: u32, mask: u32, shape: Option<u32>, unit:
     }
 
     let ink = measure(&prims, font);
-    FigureGeom { cell, beat_value, unit, w, h, tuplet, prims, ink }
+    FigureGeom { w, h, prims, ink }
 }
 
 // Rests: a crotchet's zigzag, a quaver's hooked stroke, one hook more for
@@ -365,7 +361,6 @@ pub fn build(
     g: &FigureGeom,
     origin: gpui::Point<gpui::Pixels>,
     ink: gpui::Hsla,
-    theme: &Theme,
     window: &mut gpui::Window,
     font_family: &str,
     texts: &mut crate::text::TextCache,
@@ -491,8 +486,6 @@ mod tests {
     fn a_quarter_beats_figure_is_one_note() {
         let theme = Theme::new(std::path::PathBuf::from("/nonexistent"));
         let g = geom(4, 1, 0b1, None, 12.0, &font(), &theme);
-        assert_eq!(g.cell.items.len(), 1);
-        assert!(!g.cell.items[0].rest);
         // One filled head, one stem, nothing else.
         let fills = g.prims.iter().filter(|p| matches!(p, Prim::FillEllipse(..))).count();
         let stems = g.prims.iter().filter(|p| matches!(p, Prim::StrokeRound(pts, w) if pts.len() == 2)).count();
@@ -507,7 +500,6 @@ mod tests {
     fn a_triplet_names_three_and_draws_a_three() {
         let theme = Theme::new(std::path::PathBuf::from("/nonexistent"));
         let g = geom(4, 3, 0b111, None, 12.0, &font(), &theme);
-        assert_eq!(g.tuplet, 3);
         assert!(g.prims.iter().any(|p| matches!(p, Prim::Text(t, ..) if t == "3")));
         // Fully beamed: a bracket is not drawn.
         assert_eq!(g.prims.iter().filter(|p| matches!(p, Prim::StrokeButt(..))).count(), 2);
@@ -518,7 +510,13 @@ mod tests {
         let theme = Theme::new(std::path::PathBuf::from("/nonexistent"));
         // mask 0b1001, shape 0b1111: the middle two slots are rests.
         let g = geom(4, 4, 0b1001, Some(0b1111), 12.0, &font(), &theme);
-        assert_eq!(g.cell.items.iter().filter(|it| it.rest).count(), 2);
+        // Only the two sounding slots carry heads.
+        let heads = g
+            .prims
+            .iter()
+            .filter(|p| matches!(p, Prim::FillEllipse(..) | Prim::StrokeEllipse(..)))
+            .count();
+        assert_eq!(heads, 2);
         assert!(g.prims.iter().any(|p| matches!(p, Prim::FillCircle(..))));
     }
 

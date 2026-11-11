@@ -7,12 +7,11 @@
 use std::collections::HashMap;
 
 use gpui::{
-    point, px, App, Font, FontFeatures, FontStyle, FontWeight, Hsla, Pixels, Point, ShapedLine,
-    SharedString, TextAlign, TextRun, Window, WrappedLine,
+    point, px, App, Font, FontFeatures, FontStyle, FontWeight, Hsla, ShapedLine, SharedString,
+    TextAlign, TextRun, Window, WrappedLine,
 };
 
 use crate::font::FontMetrics;
-use crate::theme::Theme;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 struct TextKey {
@@ -107,26 +106,16 @@ fn color_key(c: Hsla) -> u32 {
 // metrics come from the font tables via FontMetrics instead.
 pub struct QtLine {
     pub ascent: f64,
-    pub descent: f64,
     pub height: f64,
 }
 
 pub fn qt_line(font: &FontMetrics, size: f64) -> QtLine {
     QtLine {
         ascent: font.ascent(size),
-        descent: font.descent(size),
         height: font.line_height(size),
     }
 }
 
-// Paint a shaped line so its baseline sits at `baseline_y`, centred
-// horizontally on `center_x` — the anchors.horizontalCenter case.
-pub fn paint_centered(window: &mut Window, cx: &mut App, line: &ShapedLine, center_x: f64, baseline_y: f64) {
-    let w = line.width.to_f64();
-    paint_at(window, cx, line, center_x - w / 2.0, baseline_y);
-}
-
-// Paint with the line's left edge at x, baseline at baseline_y.
 pub fn paint_at(window: &mut Window, cx: &mut App, line: &ShapedLine, x: f64, baseline_y: f64) {
     // ShapedLine::paint centres the glyphs in the given line height; pass
     // the shaped line's own ascent+descent so nothing is padded, and put
@@ -145,8 +134,4 @@ pub fn paint_wrapped(window: &mut Window, cx: &mut App, wrapped: &WrappedLine, x
     let shaped_ascent = wrapped.unwrapped_layout.ascent.to_f64();
     let origin = point(px(x as f32), px((baseline_y - shaped_ascent) as f32));
     let _ = wrapped.paint(origin, line_h, TextAlign::Left, None, window, cx);
-}
-
-pub fn point_px(x: f64, y: f64) -> Point<Pixels> {
-    point(px(x as f32), px(y as f32))
 }
