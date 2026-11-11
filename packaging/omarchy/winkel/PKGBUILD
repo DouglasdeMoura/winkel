@@ -25,7 +25,7 @@ optdepends=(
 conflicts=('winkel-bin' 'winkel-git')
 
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('6d291b949d623db256f01c63160ec1445ccff3a0cdf7aef05ab4e5465d8cea0d')
 
 prepare() {
   cd "$pkgname-$pkgver"

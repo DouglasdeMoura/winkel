@@ -22,7 +22,7 @@ pkgbase = winkel
 	depends = libxcb
 	depends = vulkan-icd-loader
 	optdepends = ttf-jetbrains-mono-nerd: the default interface font
-	source = winkel-0.2.0.tar.gz::https://github.com/DouglasdeMoura/winkel/archive/refs/tags/v0.2.0.tar.gz
-	sha256sums = SKIP
+	source = winkel-0.2.1.tar.gz::https://github.com/DouglasdeMoura/winkel/archive/refs/tags/v0.2.1.tar.gz
+	sha256sums = 6d291b949d623db256f01c63160ec1445ccff3a0cdf7aef05ab4e5465d8cea0d
 
 pkgname = winkel
