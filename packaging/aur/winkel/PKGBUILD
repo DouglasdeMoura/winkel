@@ -1,6 +1,6 @@
 # Maintainer: Douglas Moura <doug@douglasmoura.com>
 pkgname=winkel
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc="A metronome for Omarchy that follows the live theme (Rust + GPUI)"
 arch=(x86_64 aarch64)

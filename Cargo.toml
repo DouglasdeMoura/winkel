@@ -1,6 +1,6 @@
 [package]
 name = "winkel"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "A metronome for Omarchy: Rust backend, GPUI frontend, follows the Omarchy theme"
 rust-version = "1.89"

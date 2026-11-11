@@ -1,6 +1,6 @@
 pkgbase = winkel
 	pkgdesc = A metronome for Omarchy that follows the live theme (Rust + GPUI)
-	pkgver = 0.2.0
+	pkgver = 0.2.1
 	pkgrel = 1
 	url = https://github.com/DouglasdeMoura/winkel
 	arch = x86_64

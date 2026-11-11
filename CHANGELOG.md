@@ -4,6 +4,16 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-11-11
+
+### Changed
+
+- The GPUI frontend builds without warnings. Dead fields, helpers and imports
+  left over from the QML port are gone; the window size is declared once in
+  `layout.rs`; the wheel's snap duration is one constant; and the layout test
+  now checks the resolved band positions rather than removed intermediate
+  fields.
+
 ## [0.2.0] - 2026-11-06
 
 ### Changed

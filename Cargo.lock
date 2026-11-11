@@ -7042,7 +7042,7 @@ checksum = "d6bbff5f0aada427a1e5a6da5f1f98158182f26556f345ac9e04d36d0ebed650"
 
 [[package]]
 name = "winkel"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "cpal",
  "winkel-ui",
@@ -7050,7 +7050,7 @@ dependencies = [
 
 [[package]]
 name = "winkel-ui"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "gpui",
  "lyon_path",
